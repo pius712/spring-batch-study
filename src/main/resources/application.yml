@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    # 파일 DB: 프로세스를 두 번 띄워도(1차 실패 → 2차 재시작) 메타데이터가 남아 있어야 재시작을 볼 수 있다
+    url: jdbc:h2:file:./data/batch-db;AUTO_SERVER=TRUE
+    username: sa
+    password:
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      # 잡이 여러 개라 실행할 잡을 --spring.batch.job.name=... 으로 지정해야 한다
+      enabled: true
+  sql:
+    init:
+      mode: always   # schema.sql (예제용 결과 테이블)
+  jpa:
+    hibernate:
+      ddl-auto: none # 테이블은 schema.sql 이 만든다 (Hibernate 가 만들거나 지우지 않게)
+    open-in-view: false
+
+demo:
+  # 이 값은 JobParameter가 아니다 → 1차/2차 실행에서 값이 달라도 "같은 JobInstance"로 재시작된다
+  fail-at: -1
+
+logging:
+  level:
+    com.example.toybatch: INFO

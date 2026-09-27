@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS ft_result (job_name VARCHAR(100) NOT NULL, item_value INT NOT NULL);
+CREATE TABLE IF NOT EXISTS ft_skip_log (job_name VARCHAR(100) NOT NULL, stage VARCHAR(10) NOT NULL, item_value INT NOT NULL);
