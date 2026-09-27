@@ -1,4 +1,4 @@
-# toy-batch
+# spring-batch-study
 
 Spring Batch 학습용 예제 모음. (Spring Boot 4.1 / Spring Batch 6.0 / Hibernate 7.4 / Kotlin 2.3 / Java 21 / H2)
 
