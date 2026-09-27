@@ -2,7 +2,6 @@ package com.example.toybatch.context
 
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.configuration.annotation.StepScope
-import org.springframework.batch.infrastructure.item.support.ListItemReader
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -24,14 +23,17 @@ class ContextReaderConfig(private val recorder: ContextRecorder) {
     fun lateBindingReader(
         @Value("#{jobExecutionContext['job.lastItem']}") jobLastItem: Int?,
         @Value("#{stepExecutionContext['reader.position']}") ownPosition: Int?,
-    ): ListItemReader<Int> {
+    ): PositionReader {
         val observation = ReadObservation(jobLastItem, ownPosition)
         recorder.read = observation
-        log.info(">>> [readStep] {}", observation)
-        return ListItemReader(listOfNotNull(jobLastItem))
+        log.info("    [readStep] @StepScope 빈 생성 = 주입 시점. jobExecutionContext[job.lastItem]={}, stepExecutionContext[reader.position]={}",
+            jobLastItem, ownPosition)
+        // writeStep 과 같은 키(reader.position)를 쓰는 reader. 같은 키라도 스텝마다 따로 저장되는지 보려고 일부러 겹친다
+        return PositionReader("readStep", READ_STEP_COUNT)
     }
 
     companion object {
+        const val READ_STEP_COUNT = 3
         private val log = LoggerFactory.getLogger(ContextReaderConfig::class.java)
     }
 }

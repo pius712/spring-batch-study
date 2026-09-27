@@ -17,10 +17,17 @@ class ContextObservingWriter(
     private val persisted: PersistedContextReader,
 ) : ItemWriter<Int>, StepExecutionListener {
 
+    companion object {
+        const val LAST_ITEM_KEY = "job.lastItem"
+        private val log = LoggerFactory.getLogger(ContextObservingWriter::class.java)
+    }
+
     private lateinit var stepExecution: StepExecution
 
     override fun beforeStep(stepExecution: StepExecution) {
         this.stepExecution = stepExecution
+        log.info("    [writeStep writer] beforeStep: StepExecution 을 받아둠 (id={}) → write() 에서 Step EC / Job EC 를 꺼낼 수 있다",
+            stepExecution.id)
     }
 
     override fun write(chunk: Chunk<out Int>) {
@@ -32,13 +39,17 @@ class ContextObservingWriter(
             persistedLastItem = persisted.jobContext(jobExecution.id)[LAST_ITEM_KEY],
         )
         recorder.writes += observation
-        log.info(">>> [writeStep] {}", observation)
+        log.info("    [writeStep writer] write({})", observation.items)
+        log.info("        stepExecution.readCount = {}  ← 앞 청크까지 누적 (이번 청크분은 청크가 끝나야 더해짐)", observation.stepExecutionReadCount)
+        log.info("        DB Step EC reader.position = {}  ← 직전 커밋까지 저장된 값", observation.persistedPosition)
+        log.info("        DB Job  EC job.lastItem    = {}  ← 스텝 도중에는 저장 안 됨", observation.persistedLastItem)
 
-        jobExecution.executionContext.putInt(LAST_ITEM_KEY, chunk.items.last()) // → BATCH_JOB_EXECUTION_CONTEXT (스텝 끝에 저장)
+        // → BATCH_JOB_EXECUTION_CONTEXT (스텝 끝에 저장)
+        // ❗ 저장 시점을 보여주려고 일부러 청크마다 쓴다. 실제로는 스텝이 끝날 때 결과만 써야 한다
+        //    (청크 트랜잭션과 안 묶여서, 이 스텝이 실패하면 롤백된 청크에서 쓴 값까지 저장된다. 05-1 문서 5절)
+        jobExecution.executionContext.putInt(LAST_ITEM_KEY, chunk.items.last())
+        log.info("        Job EC (메모리) 에 {}={} 씀", LAST_ITEM_KEY, chunk.items.last())
     }
 
-    companion object {
-        const val LAST_ITEM_KEY = "job.lastItem"
-        private val log = LoggerFactory.getLogger(ContextObservingWriter::class.java)
-    }
+
 }

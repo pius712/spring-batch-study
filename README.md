@@ -52,7 +52,7 @@ reader 는 `<주제>ReaderConfig` 에 `@StepScope` 빈으로, writer 는 필요�
 | 04-1 | `flow.conditional` | [04-1-flow.md](docs/04-1-flow.md) | 조건부 flow. chunk 스텝의 ExitStatus 를 리스너로 바꿔 분기 (NO_DATA), 실패를 분기로 처리하면 잡이 COMPLETED (스텝은 ABANDONED) |
 | 04-2 | `flow.decider` | [04-2-decider.md](docs/04-2-decider.md) | `JobExecutionDecider` 로 분기. 리스너로 ExitStatus 바꾸기와 비교 (기록, 재시작 시 재평가) |
 | 04-3 | `flow.builder` | [04-3-flow-builder.md](docs/04-3-flow-builder.md) | `FlowBuilder` 로 Flow 를 만들어 여러 잡에서 재사용, `split` 으로 병렬 실행 |
-| 05-1 | `context` | [05-1-step-context.md](docs/05-1-step-context.md) | chunk 스텝에서 StepExecution / StepContribution / Job·Step EC 를 받는 법, 각각 언제 어느 테이블에 저장되는지 |
+| 05-1 | `context` | [05-1-step-context.md](docs/05-1-step-context.md) | chunk 스텝에서 StepExecution / StepContribution / Job·Step EC 를 받는 법, 각각 언제 어느 테이블에 저장되는지, 재시작 기준(스텝 상태 + Step EC)과 Job EC 의 용도·best practice (`ExecutionContextPromotionListener` vs Job EC 직접 누적) |
 
 ## 읽는 순서
 
@@ -81,6 +81,7 @@ reader 는 `<주제>ReaderConfig` 에 `@StepScope` 빈으로, writer 는 필요�
 ./gradlew test --tests '*DeciderJobTest'
 ./gradlew test --tests '*FlowBuilderJobTest'
 ./gradlew test --tests '*ContextJobTest'
+./gradlew test --tests '*ContextPromotionJobTest'
 
 # 앱으로 직접 실행 (파일 H2: ./data/batch-db, 프로세스를 여러 번 띄워도 메타데이터 유지)
 ./gradlew bootRun --args='--spring.batch.job.name=restartJob --demo.fail-at=57 targetDate=2026-09-25'  # 1차: 실패

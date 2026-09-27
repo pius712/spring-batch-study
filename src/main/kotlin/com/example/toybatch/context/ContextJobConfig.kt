@@ -1,5 +1,6 @@
 package com.example.toybatch.context
 
+import org.slf4j.LoggerFactory
 import org.springframework.batch.core.job.Job
 import org.springframework.batch.core.job.builder.JobBuilder
 import org.springframework.batch.core.listener.StepExecutionListener
@@ -29,10 +30,26 @@ class ContextJobConfig(
     private val readers: ContextReaderConfig,
 ) {
 
+    companion object {
+        const val JOB_NAME = "contextJob"
+        private const val TOTAL_COUNT = 30
+        private const val CHUNK_SIZE = 10
+        private val log = LoggerFactory.getLogger(ContextJobConfig::class.java)
+    }
+
     @Bean
     fun contextJob(): Job = JobBuilder(JOB_NAME, jobRepository)
         .start(writeStep())
         .next(readStep())
+        .build()
+
+
+    private fun readStep(): Step = StepBuilder("$JOB_NAME.readStep", jobRepository)
+        .chunk<Int, Int>(CHUNK_SIZE)
+        .transactionManager(transactionManager)
+        .reader(readers.lateBindingReader(null, null))
+        .writer(ItemWriter { chunk -> log.info("    [readStep writer] write({})", chunk.items) })
+        .listener(ContextTraceListener(persisted))
         .build()
 
     private fun writeStep(): Step {
@@ -40,22 +57,13 @@ class ContextJobConfig(
         return StepBuilder("$JOB_NAME.writeStep", jobRepository)
             .chunk<Int, Int>(CHUNK_SIZE)
             .transactionManager(transactionManager)
-            .reader(PositionReader(TOTAL_COUNT)) // ItemStream 이라 스텝이 open/update/close 를 불러준다
+            .reader(PositionReader("writeStep", TOTAL_COUNT)) // ItemStream 이라 스텝이 open/update/close 를 불러준다
             .writer(writer)
             .listener(writer as StepExecutionListener)
+            .listener(ContextTraceListener(persisted))
             .build()
     }
 
-    private fun readStep(): Step = StepBuilder("$JOB_NAME.readStep", jobRepository)
-        .chunk<Int, Int>(CHUNK_SIZE)
-        .transactionManager(transactionManager)
-        .reader(readers.lateBindingReader(null, null))
-        .writer(ItemWriter { })
-        .build()
 
-    companion object {
-        const val JOB_NAME = "contextJob"
-        private const val TOTAL_COUNT = 30
-        private const val CHUNK_SIZE = 10
-    }
+
 }
